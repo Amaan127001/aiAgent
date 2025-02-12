@@ -2,7 +2,7 @@
 
 A next-generation conversational AI assistant with natural language processing capabilities, designed for seamless integration across multiple platforms.
 
-[![App Demo Thumbnail](Screenshot 2025-02-12 130426.png)](https://drive.google.com/file/d/1dkV2i4c-XljY93wuIog4j-WuEGR2l9fv/view?usp=sharing) <!-- Replace with actual thing -->
+[![App Demo Thumbnail](screenshot.png)](https://drive.google.com/uc?id=1dkV2i4c-XljY93wuIog4j-WuEGR2l9fv) <!-- Replace with actual thing -->
 
 ## ✨ Features
 
