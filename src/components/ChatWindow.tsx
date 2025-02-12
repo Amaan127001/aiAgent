@@ -138,7 +138,7 @@ const ChatWindow = () => {
       //   body: JSON.stringify({ message: message }),
       // });
 
-      const response = await fetch('https://becc-34-90-46-245.ngrok-free.app/chat', {
+      const response = await fetch('https://40f6-34-91-67-163.ngrok-free.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: message }),
