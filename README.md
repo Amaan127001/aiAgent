@@ -2,7 +2,7 @@
 
 A next-generation conversational AI assistant with natural language processing capabilities, designed for seamless integration across multiple platforms.
 
-![AI Assistant Demo](https://via.placeholder.com/800x400.png?text=Neuroforge+AI+Demo+Screen) <!-- Replace with actual screenshot -->
+![AI Assistant Demo](https://drive.google.com/file/d/1dkV2i4c-XljY93wuIog4j-WuEGR2l9fv/view?usp=sharing) <!-- Replace with actual thing -->
 
 ## ✨ Features
 
