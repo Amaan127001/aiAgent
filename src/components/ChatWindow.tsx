@@ -125,19 +125,6 @@ const ChatWindow = () => {
       setMessage('');
       await saveMessage(chatId, userMessage.text, 'user');
 
-      // Updated API endpoint to match your Hugging Face Spaces backend
-      // const response = await fetch('https://mohdamaan-deepdistilled.hf.space/chat', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ message: message }),
-      // });
-
-      // const response = await fetch('http://192.168.29.56:5000/chat', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ message: message }),
-      // });
-
       const response = await fetch('https://becc-34-90-46-245.ngrok-free.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -192,7 +179,10 @@ const ChatWindow = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-transparent text-white font-mono relative overflow-hidden">
+    <div
+      className="flex bg-transparent text-white font-mono relative overflow-hidden"
+      style={{ height: '100dvh' }}
+    >
       {/* Fluid Background */}
       <div className="absolute inset-0 z-0">
         <SplashCursor />
