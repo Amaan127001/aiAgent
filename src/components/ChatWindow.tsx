@@ -14,6 +14,7 @@ import {
   loadChatHistory,
 } from '../utils/chat';
 
+// Session storage key for tracking new chat state
 const NEW_CHAT_KEY = 'neuroforge_new_chat_started';
 
 const ChatWindow = () => {
@@ -28,8 +29,11 @@ const ChatWindow = () => {
   useEffect(() => {
     const initializeChat = async () => {
       if (!user) return;
+
       try {
         const chats = await loadChatHistory(user.id);
+
+        // Check if we're in a new chat state
         const isNewChat = sessionStorage.getItem(NEW_CHAT_KEY) === 'true';
 
         if (chats.length > 0 && !isNewChat) {
@@ -38,6 +42,7 @@ const ChatWindow = () => {
           setCurrentSession(session);
           setShowWelcome(false);
         } else {
+          // Either no chats exist or we're in a new chat state
           setCurrentSession(null);
           setShowWelcome(true);
         }
@@ -45,15 +50,39 @@ const ChatWindow = () => {
         console.error('Error loading chat history:', error);
       }
     };
+
     initializeChat();
   }, [user]);
 
   const handleNewChat = () => {
+    // Set new chat state in session storage
     sessionStorage.setItem(NEW_CHAT_KEY, 'true');
     setCurrentSession(null);
     setPendingChatId(null);
     setShowWelcome(true);
     setIsOpen(false);
+  };
+
+  const handleChatSelect = async (chatId: string) => {
+    if (!user) return;
+
+    try {
+      // Clear new chat state when selecting a specific chat
+      sessionStorage.removeItem(NEW_CHAT_KEY);
+
+      const chats = await loadChatHistory(user.id);
+      const selectedChat = chats.find((chat) => chat.id === chatId);
+      if (!selectedChat) return;
+
+      const messages = await loadChatMessages(chatId);
+      const session = convertToChatSession(selectedChat, messages);
+      setCurrentSession(session);
+      setShowWelcome(false);
+      setPendingChatId(null);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error loading chat:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,8 +92,11 @@ const ChatWindow = () => {
     try {
       setShowWelcome(false);
       setIsLoading(true);
+
+      // Clear new chat state when starting a new conversation
       sessionStorage.removeItem(NEW_CHAT_KEY);
 
+      // Create new chat if needed
       let chatId = currentSession?.id || pendingChatId;
       if (!chatId) {
         chatId = await createNewChat(user.id, message);
@@ -78,14 +110,35 @@ const ChatWindow = () => {
         timestamp: new Date(),
       };
 
-      const newSession = currentSession || { id: chatId, messages: [], createdAt: new Date() };
-      const updatedSession = { ...newSession, messages: [...newSession.messages, userMessage] };
+      const newSession = currentSession || {
+        id: chatId,
+        messages: [],
+        createdAt: new Date(),
+      };
+
+      const updatedSession = {
+        ...newSession,
+        messages: [...newSession.messages, userMessage],
+      };
 
       setCurrentSession(updatedSession);
       setMessage('');
       await saveMessage(chatId, userMessage.text, 'user');
 
-      const response = await fetch('https://4821-34-143-145-123.ngrok-free.app/chat', {
+      // Updated API endpoint to match your Hugging Face Spaces backend
+      // const response = await fetch('https://mohdamaan-deepdistilled.hf.space/chat', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message: message }),
+      // });
+
+      // const response = await fetch('http://192.168.29.56:5000/chat', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message: message }),
+      // });
+
+      const response = await fetch('https://becc-34-90-46-245.ngrok-free.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: message }),
@@ -103,18 +156,44 @@ const ChatWindow = () => {
 
       await saveMessage(chatId, botResponse.text, 'bot');
 
-      const finalSession = { ...updatedSession, messages: [...updatedSession.messages, botResponse] };
+      const finalSession = {
+        ...updatedSession,
+        messages: [...updatedSession.messages, botResponse],
+      };
+
       setCurrentSession(finalSession);
     } catch (error) {
       console.error('Error:', error);
+      const errorMessage: Message = {
+        id: 'error-' + Date.now().toString(),
+        text: "I'm having trouble responding. Please try again.",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+
+      setCurrentSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [...prev.messages, errorMessage],
+            }
+          : null
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Clear new chat state when component unmounts
+  useEffect(() => {
+    return () => {
+      sessionStorage.removeItem(NEW_CHAT_KEY);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen bg-transparent text-white font-mono">
-      {/* Background */}
+    <div className="flex h-screen bg-transparent text-white font-mono relative overflow-hidden">
+      {/* Fluid Background */}
       <div className="absolute inset-0 z-0">
         <SplashCursor />
       </div>
@@ -125,12 +204,13 @@ const ChatWindow = () => {
         onToggle={() => setIsOpen(!isOpen)}
         onNewChat={handleNewChat}
         currentChatId={currentSession?.id || null}
+        onChatSelect={handleChatSelect}
       />
 
-      {/* Chat Window */}
-      <div className="flex flex-col flex-1 w-full min-h-0 relative">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col w-full relative z-10">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#0d1117]/95 to-[#1a1b26]/95 backdrop-blur-md p-3 sm:p-4 flex items-center justify-between border-b border-[#4cc9f0]/20">
+        <div className="bg-gradient-to-r from-[#0d1117]/95 to-[#1a1b26]/95 backdrop-blur-md p-3 sm:p-4 flex items-center justify-between border-b border-[#4cc9f0]/20 pl-14 sm:pl-16">
           <div className="flex items-center gap-2 sm:gap-3">
             <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-[#4cc9f0]" />
             <div>
@@ -142,25 +222,35 @@ const ChatWindow = () => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-transparent custom-scrollbar pb-20 sm:pb-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-transparent custom-scrollbar">
           {showWelcome && (
             <div className="flex gap-2 sm:gap-3 max-w-3xl mx-auto bg-gradient-to-r from-[#0d1117]/80 to-[#1c2333]/80 border border-[#b5179e] p-3 sm:p-4 rounded-lg shadow-lg backdrop-blur-sm">
               <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-[#4cc9f0] flex-shrink-0" />
               <div>
-                <p className="text-sm sm:text-base text-white">Hi, I'm NeuroForge. How can I help you today?</p>
+                <p className="text-sm sm:text-base text-white">
+                  Hi, I'm NeuroForge. How can I help you today?
+                </p>
               </div>
             </div>
           )}
-          {currentSession?.messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+          {currentSession?.messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
         </div>
 
-        {/* Input Bar */}
+        {/* Input Area */}
         <form
           onSubmit={handleSubmit}
-          className="sticky bottom-0 p-3 sm:p-4 bg-gradient-to-r from-[#0d1117]/95 to-[#1a1b26]/95 backdrop-blur-md border-t border-[#4cc9f0]/20"
+          className="p-3 sm:p-4 bg-gradient-to-r from-[#0d1117]/95 to-[#1a1b26]/95 backdrop-blur-md border-t border-[#4cc9f0]/20"
         >
           <div className="relative max-w-4xl mx-auto">
-            <div className="flex gap-2 bg-[#1c2333]/80 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 focus-within:ring-2 focus-within:ring-[#4cc9f0]">
+            <div className="flex gap-2 bg-[#1c2333]/80 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 focus-within:ring-2 focus-within:ring-[#4cc9f0] transition-all">
+              <button
+                type="button"
+                className="p-1.5 sm:p-2 hover:bg-[#0d1117]/60 rounded-lg transition-colors"
+              >
+                <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-[#4cc9f0]" />
+              </button>
               <input
                 type="text"
                 value={message}
@@ -169,9 +259,27 @@ const ChatWindow = () => {
                 className="flex-1 bg-transparent outline-none text-white placeholder-gray-400 text-sm sm:text-base min-w-0"
                 disabled={isLoading}
               />
-              <button type="submit" disabled={isLoading} className="p-1.5 sm:p-2 bg-[#4cc9f0] rounded-lg">
-                <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              </button>
+              <div className="flex gap-1 sm:gap-2">
+                <button
+                  type="button"
+                  className="p-1.5 sm:p-2 hover:bg-[#0d1117]/60 rounded-lg transition-colors"
+                >
+                  <Paperclip className="w-4 h-4 sm:w-5 sm:h-5 text-[#b5179e]" />
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`bg-gradient-to-r from-[#4cc9f0] to-[#b5179e] p-1.5 sm:p-2 rounded-lg ${
+                    isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
+                  } transition-opacity`}
+                >
+                  {isLoading ? (
+                    <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </form>
