@@ -192,7 +192,8 @@ const ChatWindow = () => {
   }, []);
 
   return (
-    <div className="flex h-screen bg-transparent text-white font-mono relative overflow-hidden">
+    // Removed "overflow-hidden" from here to allow scrolling on mobile
+    <div className="flex h-screen bg-transparent text-white font-mono relative">
       {/* Fluid Background */}
       <div className="absolute inset-0 z-0">
         <SplashCursor />
