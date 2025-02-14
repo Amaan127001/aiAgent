@@ -125,7 +125,7 @@ const ChatWindow = () => {
       setMessage('');
       await saveMessage(chatId, userMessage.text, 'user');
 
-      const response = await fetch('https://becc-34-90-46-245.ngrok-free.app/chat', {
+      const response = await fetch('https://4ed3-35-186-149-56.ngrok-free.app/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: message }),
